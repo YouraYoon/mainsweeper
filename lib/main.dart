@@ -42,6 +42,8 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
   final int gridWidth = 12;
   final int gridHeight = 25;
   late int totalCells;
+  int? _pressedCellIndex;
+  bool _isFacePressed = false;
 
   // 게임 데이터
   late List<int> _numbers; // 각 셀에 들어갈 숫자 목록 (1~300)
@@ -104,6 +106,10 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
     _revealedCount = 0;
 
     _colorPalette.shuffle(Random());
+
+    _pressedCellIndex = null;
+
+    _isFacePressed = false;
   }
 
   // 셀을 클릭했을 때 호출될 함수
@@ -167,53 +173,91 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
       backgroundColor: Colors.grey,
       body: Column(
         children: <Widget>[
-          Container(
-            color: Colors.grey.shade400,
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: <Widget>[
-                _buildSegmentDisplay(remainingCellsString),
-                ElevatedButton(
-                  onPressed: _resetGame,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey.shade400,
-                    padding: const EdgeInsets.all(8.0),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                        4.0,
-                      ), // 필요에 따라 둥근 모서리 조절
-                    ),
-                    minimumSize: const Size(48, 48),
-                    elevation: 0,
-                    shadowColor: Colors.transparent,
-                  ),
-                  child: Container(
-                    padding: const EdgeInsets.all(0.0),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(4.0),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.shade500,
-                          offset: const Offset(2, 2),
-                          blurRadius: 2,
-                          spreadRadius: 0,
-                        ),
+          Padding(
+            padding: const EdgeInsets.all(10.0),
+            child: Container(
+              padding: const EdgeInsets.all(8.0),
+              decoration: BoxDecoration(
+                color: Color(0xFFB5B5B5),
 
-                        BoxShadow(
-                          color: Colors.white,
-                          offset: const Offset(-2, -2),
-                          blurRadius: 2,
-                          spreadRadius: 0,
-                        ),
-                      ],
-                    ),
-                    child: Image.asset(_facePlayPath, width: 36, height: 36),
-                  ),
+                border: const Border(
+                  top: BorderSide(color: Color(0xFF6f6f6f), width: 4.0),
+                  left: BorderSide(color: Color(0xFF6f6f6f), width: 4.0),
+                  bottom: BorderSide(color: Color(0xFFFFFFFF), width: 4.0),
+                  right: BorderSide(color: Color(0xFFFFFFFF), width: 4.0),
                 ),
-                _buildSegmentDisplay(remainingBombString),
-              ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: <Widget>[
+                  _buildSegmentDisplay(remainingCellsString),
+                  GestureDetector(
+                    onTapDown: (_) {
+                      setState(() {
+                        _isFacePressed = true;
+                      });
+                    },
+                    onTapUp: (_) {
+                      setState(() {
+                        _isFacePressed = false;
+                      });
+                      _resetGame();
+                    },
+                    onTapCancel: () {
+                      setState(() {
+                        _isFacePressed = false;
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(0.0),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        border:
+                            _isFacePressed
+                                ? Border(
+                                  top: BorderSide(
+                                    color: Color(0xFF6f6f6f),
+                                    width: 4.0,
+                                  ),
+                                  left: BorderSide(
+                                    color: Color(0xFF6f6f6f),
+                                    width: 4.0,
+                                  ),
+                                  bottom: BorderSide(
+                                    color: Color(0xFFFFFFFF),
+                                    width: 4.0,
+                                  ),
+                                  right: BorderSide(
+                                    color: Color(0xFFFFFFFF),
+                                    width: 4.0,
+                                  ),
+                                )
+                                : const Border(
+                                  bottom: BorderSide(
+                                    color: Color(0xFF6f6f6f),
+                                    width: 4.0,
+                                  ),
+                                  right: BorderSide(
+                                    color: Color(0xFF6f6f6f),
+                                    width: 4.0,
+                                  ),
+                                  top: BorderSide(
+                                    color: Color(0xFFFFFFFF),
+                                    width: 4.0,
+                                  ),
+                                  left: BorderSide(
+                                    color: Color(0xFFFFFFFF),
+                                    width: 4.0,
+                                  ),
+                                ),
+                      ),
+                      child: Image.asset(_facePlayPath, width: 36, height: 36),
+                    ),
+                  ),
+
+                  _buildSegmentDisplay(remainingBombString),
+                ],
+              ),
             ),
           ),
           Expanded(
@@ -238,43 +282,59 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
                   // 현재 셀에 할당된 숫자
                   final int number = _numbers[index];
 
+                  final bool inPressed = _pressedCellIndex == index;
+
+                  final Border boxBorder =
+                      isRevealed
+                          ? Border.all(color: Color(0xFFb7b7b7), width: 4.0)
+                          : Border(
+                            bottom: BorderSide(
+                              color: Color(0xFF6f6f6f),
+                              width: 4.0,
+                            ),
+                            right: BorderSide(
+                              color: Color(0xFF6f6f6f),
+                              width: 4.0,
+                            ),
+                            top: BorderSide(
+                              color: Color(0xFFFFFFFF),
+                              width: 4.0,
+                            ),
+                            left: BorderSide(
+                              color: Color(0xFFFFFFFF),
+                              width: 4.0,
+                            ),
+                          );
                   // 클릭 이벤트를 감지하기 위해 GestureDetector를 사용합니다.
                   return GestureDetector(
-                    onTap: () {
-                      // 아직 열리지 않은 셀만 열 수 있습니다.
+                    onTapDown: (details) {
                       if (!isRevealed) {
+                        setState(() {
+                          _pressedCellIndex = index;
+                        });
+                      }
+                    },
+                    onTapUp: (details) {
+                      if (!isRevealed) {
+                        setState(() {
+                          _pressedCellIndex = null;
+                        });
                         _revealCell(index);
+                      }
+                    },
+                    onTapCancel: () {
+                      if (!isRevealed) {
+                        setState(() {
+                          _pressedCellIndex = null;
+                        });
                       }
                     },
                     child: Container(
                       // 셀의 디자인을 정의합니다.
                       decoration: BoxDecoration(
                         color:
-                            isRevealed
-                                ? Colors.grey.shade300
-                                : Colors.grey.shade400,
-                        border: Border.all(
-                          color: Colors.grey.shade500,
-                          width: 2,
-                        ),
-                        borderRadius: BorderRadius.circular(0.5),
-                        boxShadow: [
-                          if (!isRevealed)
-                            BoxShadow(
-                              color: Colors.grey.shade500,
-                              offset: const Offset(1, 1),
-                              blurRadius: 0,
-                              spreadRadius: 0,
-                            ),
-
-                          if (!isRevealed)
-                            BoxShadow(
-                              color: Colors.white,
-                              offset: const Offset(-1, -1),
-                              blurRadius: 0,
-                              spreadRadius: 0,
-                            ),
-                        ],
+                            isRevealed ? Color(0xFFb7b7b7) : Color(0xFFb8b8b8),
+                        border: boxBorder,
                       ),
                       // 셀의 내용을 중앙에 배치합니다.
                       child: Center(
