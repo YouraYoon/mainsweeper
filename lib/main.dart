@@ -14,7 +14,7 @@ void main() async {
     await windowManager.setTitle("쿨타임 피크닉 2025");
 
     WindowOptions windowOptions = const WindowOptions(
-      size: Size(800, 920),
+      size: Size(1000, 1100),
       center: true,
       backgroundColor: Colors.transparent,
       skipTaskbar: false,
@@ -185,6 +185,89 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
     setState(() {
       _initializeGame(numberRange);
     });
+  }
+
+  Future<void> _showCellContentDialog(int index) async {
+    final int number = _numbers[index];
+    Widget dialogContent;
+
+    if (number == -1) {
+      dialogContent = Image.asset(
+        'assets/images/mine.png',
+        width: 150,
+        height: 150,
+      );
+    } else {
+      final Color dialogColor =
+          _colorPalette[_revealedCount % _colorPalette.length];
+      dialogContent = Text(
+        '$number',
+        style: TextStyle(
+          fontSize: 150,
+          fontWeight: FontWeight.bold,
+          color: dialogColor,
+        ),
+      );
+    }
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFFB5B5B5),
+          content: Container(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [dialogContent],
+            ),
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text(
+                '확인',
+                style: TextStyle(color: Colors.black, fontSize: 20.0),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showDeveloperInfo() {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFFB5B5B5),
+          content: Container(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [Text("Developed by BilguuneeSoft")],
+            ),
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text(
+                '확인',
+                style: TextStyle(color: Colors.black, fontSize: 20.0),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   // --- Dialog 로직 수정 ---
@@ -381,7 +464,12 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
                           ),
                         ),
 
-                        _buildSegmentDisplay(remainingBombString),
+                        GestureDetector(
+                          onTap: () {
+                            _showDeveloperInfo();
+                          },
+                          child: _buildSegmentDisplay(remainingBombString),
+                        ),
                       ],
                     ),
                   ],
@@ -456,11 +544,12 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
                             });
                           }
                         },
-                        onTapUp: (details) {
+                        onTapUp: (details) async {
                           if (!isRevealed) {
                             setState(() {
                               _pressedCellIndex = null;
                             });
+                            await _showCellContentDialog(index);
                             _revealCell(index);
                           }
                         },
