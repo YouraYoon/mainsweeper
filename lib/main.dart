@@ -14,7 +14,7 @@ void main() async {
     await windowManager.setTitle("쿨타임 피크닉 2025");
 
     WindowOptions windowOptions = const WindowOptions(
-      size: Size(1000, 1100),
+      size: Size(900, 1020),
       center: true,
       backgroundColor: Colors.transparent,
       skipTaskbar: false,
