@@ -250,7 +250,10 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
             padding: const EdgeInsets.all(20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              children: [Text("Developed by BilguuneeSoft")],
+              children: [
+                Text("Developed by BilguuneeSoft"),
+                Text("Random Minesweeper 1.0.2"),
+              ],
             ),
           ),
           actionsAlignment: MainAxisAlignment.center,
