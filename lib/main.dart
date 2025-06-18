@@ -119,17 +119,26 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
     if (numberRange <= 64) {
       gridSize = 9;
       cellFontSize = 20;
-    } else if (numberRange <= 115) {
-      gridSize = 12;
+    } else if (numberRange <= 96) {
+      gridSize = 11;
       cellFontSize = 18;
+    } else if (numberRange <= 135) {
+      gridSize = 13;
+      cellFontSize = 16;
+    } else if (numberRange <= 180) {
+      gridSize = 15;
+      cellFontSize = 12;
     } else if (numberRange <= 231) {
       gridSize = 17;
-      cellFontSize = 16;
-    } else if (numberRange <= 352) {
-      gridSize = 21;
+      cellFontSize = 12;
+    } else if (numberRange <= 288) {
+      gridSize = 19;
+      cellFontSize = 12;
+    } else if (numberRange <= 387) {
+      gridSize = 22;
       cellFontSize = 12;
     } else {
-      gridSize = 24;
+      gridSize = 25;
       cellFontSize = 10;
     }
     gridWidth = gridSize;
@@ -513,31 +522,45 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
                       // 현재 셀에 할당된 숫자
                       final int number = _numbers[index];
 
-                      final bool inPressed = _pressedCellIndex == index;
+                      final bool isPressed = _pressedCellIndex == index;
 
-                      final Border boxBorder =
-                          isRevealed
-                              ? Border.all(color: Color(0xFFb7b7b7), width: 4.0)
-                              : Border(
-                                bottom: BorderSide(
-                                  color: Color(0xFF6f6f6f),
-                                  width: 4.0,
-                                ),
-                                right: BorderSide(
-                                  color: Color(0xFF6f6f6f),
-                                  width: 4.0,
-                                ),
-                                top: BorderSide(
-                                  color: Color(0xFFFFFFFF),
-                                  width: 4.0,
-                                ),
-                                left: BorderSide(
-                                  color: Color(0xFFFFFFFF),
-                                  width: 4.0,
-                                ),
-                              );
+                      final Border boxBorder;
+
+                      if (isPressed && !isRevealed) {
+                        boxBorder = const Border(
+                          top: BorderSide(color: Color(0xFF6f6f6f), width: 4.0),
+                          left: BorderSide(
+                            color: Color(0xFF6f6f6f),
+                            width: 4.0,
+                          ),
+                          bottom: BorderSide(color: Colors.white, width: 4.0),
+                          right: BorderSide(color: Colors.white, width: 4.0),
+                        );
+                      } else if (isRevealed) {
+                        boxBorder = Border.all(
+                          color: Color(0xFFb7b7b7),
+                          width: 4.0,
+                        );
+                      } else {
+                        boxBorder = Border(
+                          bottom: BorderSide(
+                            color: Color(0xFF6f6f6f),
+                            width: 4.0,
+                          ),
+                          right: BorderSide(
+                            color: Color(0xFF6f6f6f),
+                            width: 4.0,
+                          ),
+                          top: BorderSide(color: Color(0xFFFFFFFF), width: 4.0),
+                          left: BorderSide(
+                            color: Color(0xFFFFFFFF),
+                            width: 4.0,
+                          ),
+                        );
+                      }
                       final String displayText =
                           isRevealed ? (number == -1 ? 'B' : '$number') : '';
+
                       // 클릭 이벤트를 감지하기 위해 GestureDetector를 사용합니다.
                       return GestureDetector(
                         onTapDown: (details) {
