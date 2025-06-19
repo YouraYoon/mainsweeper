@@ -3,6 +3,8 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:minesweeper_rendom/explosion_dialog_content.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:window_manager/window_manager.dart';
 
 void main() async {
@@ -13,8 +15,10 @@ void main() async {
 
     await windowManager.setTitle("쿨타임 피크닉 2025");
 
+    const Size initialSize = Size(1600, 900);
+
     WindowOptions windowOptions = const WindowOptions(
-      size: Size(900, 1020),
+      size: initialSize,
       center: true,
       backgroundColor: Colors.transparent,
       skipTaskbar: false,
@@ -24,6 +28,17 @@ void main() async {
     windowManager.waitUntilReadyToShow(windowOptions, () async {
       await windowManager.show();
       await windowManager.focus();
+
+      await windowManager.setResizable(true);
+
+      await windowManager.setAspectRatio(
+        initialSize.width / initialSize.height,
+      );
+
+      await windowManager.setMinimumSize(const Size(540, 960));
+
+      //창 최대화
+      //await windowManager.maximize();
     });
   }
   runApp(const MyApp());
@@ -55,8 +70,8 @@ class RandomMineSweeper extends StatefulWidget {
 }
 
 class _RandomMineSweeper extends State<RandomMineSweeper> {
+  String _appVersion = '';
   //이미지
-
   final String _faceWinPath = 'assets/images/face_win.png';
   final String _faceLostPath = 'assets/images/face_lost.png';
   final String _facePlayPath = 'assets/images/face_play.png';
@@ -81,13 +96,26 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
   late List<Color?> _cellColors; // 각 셀에 지정된 색상 (null일 수 있음)
   late int _revealedCount; // 셀을 연 횟수 카운터
 
+  bool _isGameInitialized = false;
+
   @override
   void initState() {
     super.initState();
     // initState는 위젯이 생성될 때 한 번만 호출됩니다.
     // 여기서 게임을 초기화합니다.
     _colorPalette = _generateHighContrastColors(255);
-    _initializeGame(_numberRange);
+    _loadVersionInfo();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showNumberInputDialog();
+    });
+  }
+
+  Future<void> _loadVersionInfo() async {
+    final PackageInfo packageInfo = await PackageInfo.fromPlatform();
+    setState(() {
+      // pubspec.yaml의 version: 1.0.2+3 에서 '1.0.2'는 version, '3'은 buildNumber 입니다.
+      _appVersion = '${packageInfo.version}+${packageInfo.buildNumber}';
+    });
   }
 
   /// 255개의 시인성 좋은 색상 리스트를 생성하는 함수
@@ -113,37 +141,26 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
 
   // 게임을 초기 상태로 설정하는 함수
   void _initializeGame(int numberRange) {
+    _isGameInitialized = true;
+
     _numberRange = numberRange;
 
-    int gridSize;
-    if (numberRange <= 64) {
-      gridSize = 9;
+    if (numberRange <= 16 * 7) {
+      gridWidth = 16;
+      gridHeight = 7;
       cellFontSize = 20;
-    } else if (numberRange <= 96) {
-      gridSize = 11;
+    } else if (numberRange <= 26 * 12) {
+      gridWidth = 26;
+      gridHeight = 12;
       cellFontSize = 18;
-    } else if (numberRange <= 135) {
-      gridSize = 13;
-      cellFontSize = 16;
-    } else if (numberRange <= 180) {
-      gridSize = 15;
-      cellFontSize = 12;
-    } else if (numberRange <= 231) {
-      gridSize = 17;
-      cellFontSize = 12;
-    } else if (numberRange <= 288) {
-      gridSize = 19;
-      cellFontSize = 12;
-    } else if (numberRange <= 387) {
-      gridSize = 22;
-      cellFontSize = 12;
     } else {
-      gridSize = 25;
+      gridWidth = 32;
+      gridHeight = 15;
       cellFontSize = 10;
     }
-    gridWidth = gridSize;
-    gridHeight = gridSize;
     totalCells = gridWidth * gridHeight;
+
+    print("width: $gridWidth heigth: $gridHeight cellCNT: $totalCells");
 
     // 3. 셀 데이터 생성 (가장 큰 변경점)
     // 1부터 입력된 숫자(numberRange)까지의 리스트 생성
@@ -196,16 +213,21 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
     });
   }
 
-  Future<void> _showCellContentDialog(int index) async {
+  Future<bool?> _showCellContentDialog(
+    int index,
+    List<int> revealedNumbers,
+  ) async {
     final int number = _numbers[index];
     Widget dialogContent;
 
+    VoidCallback onOkPressed;
+
     if (number == -1) {
-      dialogContent = Image.asset(
-        'assets/images/mine.png',
-        width: 150,
-        height: 150,
-      );
+      dialogContent = ExplosionDialogContent(revealedNumbers: revealedNumbers);
+
+      onOkPressed = () {
+        Navigator.of(context).pop(true);
+      };
     } else {
       final Color dialogColor =
           _colorPalette[_revealedCount % _colorPalette.length];
@@ -217,11 +239,21 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
           color: dialogColor,
         ),
       );
+
+      onOkPressed = () {
+        Navigator.of(context).pop(false);
+      };
     }
-    return showDialog<void>(
+    return showGeneralDialog<bool>(
       context: context,
-      barrierDismissible: true,
-      builder: (BuildContext context) {
+      barrierDismissible: number == -1 ? false : true,
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (
+        BuildContext buildContext,
+        Animation<double> animation,
+        Animation<double> secondaryAnimation,
+      ) {
         return AlertDialog(
           backgroundColor: const Color(0xFFB5B5B5),
           content: Container(
@@ -234,15 +266,34 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
           actionsAlignment: MainAxisAlignment.center,
           actions: <Widget>[
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text(
-                '확인',
-                style: TextStyle(color: Colors.black, fontSize: 20.0),
-              ),
+              onPressed: onOkPressed,
+              child:
+                  number == -1
+                      ? Text(
+                        '다시 시작',
+                        style: TextStyle(color: Colors.black, fontSize: 20.0),
+                      )
+                      : Text(
+                        '확인',
+                        style: TextStyle(color: Colors.black, fontSize: 20.0),
+                      ),
             ),
           ],
+        );
+      },
+      transitionBuilder: (
+        BuildContext context,
+        Animation<double> animation,
+        Animation<double> secondaryAnimation,
+        Widget child,
+      ) {
+        final curvedAnimation = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutQuint,
+        );
+        return FadeTransition(
+          opacity: curvedAnimation,
+          child: ScaleTransition(scale: curvedAnimation, child: child),
         );
       },
     );
@@ -261,7 +312,7 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text("Developed by BilguuneeSoft"),
-                Text("Random Minesweeper 1.0.2"),
+                Text("Random Minesweeper ver $_appVersion"),
               ],
             ),
           ),
@@ -363,6 +414,13 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
 
   @override
   Widget build(BuildContext context) {
+    // 게임이 아직 초기화되지 않았다면, 로딩 화면을 보여줍니다.
+    if (!_isGameInitialized) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFB6B6B6),
+        body: Center(child: CircularProgressIndicator(color: Colors.white)),
+      );
+    }
     // 왼쪽 표시창: 남은 숫자 셀 개수
     // (전체 숫자 개수 - 찾은 숫자 개수)
     final remainingValuableCells = _numberRange - _revealedCount;
@@ -575,8 +633,29 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
                             setState(() {
                               _pressedCellIndex = null;
                             });
-                            await _showCellContentDialog(index);
                             _revealCell(index);
+
+                            if (_numbers[index] == -1) {
+                              final List<int> foundNumbers = [];
+                              for (int i = 0; i < totalCells; i++) {
+                                if (_revealedCells[i] && _numbers[i] != -1) {
+                                  foundNumbers.add(_numbers[i]);
+                                }
+                              }
+                              foundNumbers.sort();
+
+                              final bool? shouldReset =
+                                  await _showCellContentDialog(
+                                    index,
+                                    foundNumbers,
+                                  );
+
+                              if (shouldReset == true) {
+                                _resetGame(_numberRange);
+                              }
+                            } else {
+                              await _showCellContentDialog(index, []);
+                            }
                           }
                         },
                         onTapCancel: () {
