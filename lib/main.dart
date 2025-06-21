@@ -7,6 +7,8 @@ import 'package:minesweeper_rendom/explosion_dialog_content.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:window_manager/window_manager.dart';
 
+enum Difficulty { easy, medium, hard }
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -70,6 +72,12 @@ class RandomMineSweeper extends StatefulWidget {
 }
 
 class _RandomMineSweeper extends State<RandomMineSweeper> {
+  Difficulty _selectedDifficulty = Difficulty.easy;
+  final Map<Difficulty, String> _difficultyLabels = {
+    Difficulty.easy: '쉬움',
+    Difficulty.medium: '중간',
+    Difficulty.hard: '어려움',
+  };
   String _appVersion = '';
   //이미지
   final String _faceWinPath = 'assets/images/face_win.png';
@@ -106,7 +114,7 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
     _colorPalette = _generateHighContrastColors(255);
     _loadVersionInfo();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _showNumberInputDialog();
+      __startNewGameSequence();
     });
   }
 
@@ -211,6 +219,170 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
     setState(() {
       _initializeGame(numberRange);
     });
+  }
+
+  Future<void> __startNewGameSequence() async {
+    // 앱이 종료될 때까지 설정 루프를 반복합니다.
+    while (mounted) {
+      // 1단계: 난이도 선택
+      final Difficulty? difficulty = await _showDifficultyDialog();
+      if (difficulty == null) {
+        // 사용자가 Dialog를 닫는 등 예외적인 경우,
+        // 게임이 시작되지 않았다면 기본값으로 시작하고 루프 종료
+        if (!_isGameInitialized) _resetGame(_numberRange);
+        break;
+      }
+      _selectedDifficulty = difficulty; // 선택된 난이도 저장
+
+      // 2단계: 숫자 입력
+      while (mounted) {
+        final int? number = await _showNumberInputDialog();
+        if (number == null) {
+          // '취소'를 눌렀으므로 난이도 선택으로 돌아감
+          break; // 안쪽 루프를 탈출하여 바깥 루프 시작점으로
+        }
+
+        // 3단계: 설정 확인
+        final bool? confirmed = await _showConfirmationDialog(
+          difficulty,
+          number,
+        );
+        if (confirmed == true) {
+          // '확인'을 눌렀으므로 게임을 시작하고 전체 시퀀스 종료
+          _resetGame(number);
+          return;
+        }
+        // '취소'를 누르면 현재 루프가 계속되어 숫자 입력창이 다시 뜸
+      }
+    }
+  }
+
+  Future<Difficulty?> _showDifficultyDialog() {
+    return showDialog<Difficulty>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        Difficulty selected = _selectedDifficulty;
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFFB5B5B5),
+              title: const Text('난이도 선택'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children:
+                    Difficulty.values.map((difficulty) {
+                      return RadioListTile<Difficulty>(
+                        title: Text(_difficultyLabels[difficulty]!),
+                        value: difficulty,
+                        groupValue: selected,
+                        onChanged: (Difficulty? value) {
+                          setState(() {
+                            selected = value!;
+                          });
+                        },
+                      );
+                    }).toList(),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(selected),
+                  child: const Text(
+                    '확인',
+                    style: TextStyle(color: Colors.black),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<int?> _showNumberInputDialog() async {
+    final TextEditingController textFieldController = TextEditingController();
+
+    return showDialog<int>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFFB5B5B5),
+          title: const Text('숫자 범위 입력'),
+          content: TextField(
+            controller: textFieldController,
+            keyboardType: TextInputType.number,
+            inputFormatters: <TextInputFormatter>[
+              FilteringTextInputFormatter.digitsOnly,
+            ],
+            decoration: const InputDecoration(hintText: "50 ~ 500 사이 숫자"),
+            autofocus: true,
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('취소', style: TextStyle(color: Colors.black)),
+              // '취소'는 null을 반환하며 닫기
+              onPressed: () => Navigator.of(context).pop(null),
+            ),
+            TextButton(
+              child: const Text('확인', style: TextStyle(color: Colors.black)),
+              onPressed: () {
+                final String inputText = textFieldController.text;
+                if (inputText.isNotEmpty) {
+                  final int? enteredNumber = int.tryParse(inputText);
+                  if (enteredNumber != null &&
+                      enteredNumber >= 50 &&
+                      enteredNumber <= 500) {
+                    // 입력된 숫자를 반환하며 닫기
+                    Navigator.of(context).pop(enteredNumber);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('50에서 500 사이의 숫자를 입력해주세요.'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<bool?> _showConfirmationDialog(Difficulty difficulty, int number) {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFFB5B5B5),
+          title: const Text('설정 확인'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('난이도: ${_difficultyLabels[difficulty]}'),
+              const SizedBox(height: 8),
+              Text('숫자 범위: $number'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('취소', style: TextStyle(color: Colors.black)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('확인', style: TextStyle(color: Colors.black)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<bool?> _showCellContentDialog(
@@ -333,61 +505,6 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
     );
   }
 
-  // --- Dialog 로직 수정 ---
-  Future<void> _showNumberInputDialog() async {
-    final TextEditingController textFieldController = TextEditingController();
-
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFFB5B5B5),
-          title: const Text('숫자 범위 입력'),
-          content: TextField(
-            controller: textFieldController,
-            keyboardType: TextInputType.number,
-            inputFormatters: <TextInputFormatter>[
-              FilteringTextInputFormatter.digitsOnly,
-            ],
-            decoration: const InputDecoration(hintText: "50 ~ 500 사이 숫자"),
-            autofocus: true,
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('확인', style: TextStyle(color: Colors.black)),
-              onPressed: () {
-                final String inputText = textFieldController.text;
-                if (inputText.isNotEmpty) {
-                  final int? enteredNumber = int.tryParse(inputText);
-                  // 유효성 검사: 50 ~ 500 사이인지 확인
-                  if (enteredNumber != null &&
-                      enteredNumber >= 50 &&
-                      enteredNumber <= 500) {
-                    Navigator.of(context).pop(); // 먼저 Dialog를 닫고
-                    _resetGame(enteredNumber); // 새로운 숫자로 게임을 리셋
-                  } else {
-                    // 유효하지 않은 범위일 경우 사용자에게 알림 (SnackBar)
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('50에서 500 사이의 숫자를 입력해주세요.'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                  }
-                }
-              },
-            ),
-            TextButton(
-              child: const Text('취소', style: TextStyle(color: Colors.black)),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   // 7세그먼트 숫자 표시 위젯
   Widget _buildSegmentDisplay(String text) {
     return Container(
@@ -461,7 +578,7 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
                       children: <Widget>[
                         GestureDetector(
                           onTap: () {
-                            _showNumberInputDialog();
+                            __startNewGameSequence();
                           },
                           child: _buildSegmentDisplay(remainingCellsString),
                         ),
