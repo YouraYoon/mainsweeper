@@ -328,6 +328,10 @@ class GameModel {
     }
   }
 
+  void revealAllCells() {
+    revealedCells = List.generate(totalCells, (_) => true);
+  }
+
   // 찾은 숫자 목록을 반환하는 로직
   List<int> getFoundNumbers() {
     final List<int> foundNumbers = [];

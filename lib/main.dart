@@ -142,6 +142,36 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
     return colors;
   }
 
+  Future<void> _handleGameOver(int index) async {
+    // Dialog에 전달할, 이전에 찾은 숫자 목록을 미리 수집합니다.
+    final List<int> foundNumbers = _gameModel.getFoundNumbers();
+
+    // 1. 게임 종료 시퀀스를 시작합니다.
+    setState(() {
+      // 모델의 모든 셀을 '열림' 상태로 바꿉니다.
+      _gameModel.revealAllCells();
+
+      // 2. 모든 숫자 셀에 색상을 부여하여 보이게 만듭니다. (핵심 수정사항)
+      for (int i = 0; i < _gameModel.totalCells; i++) {
+        // 아직 색상이 없는 숫자 셀에만 색상을 할당합니다.
+        if (_gameModel.numbers[i] != -1 && _cellColors[i] == null) {
+          _cellColors[i] = _colorPalette[i % _colorPalette.length];
+        }
+      }
+    });
+
+    // 3. 사용자가 전체 판을 볼 수 있도록 잠시 기다립니다 (예: 2초).
+    await Future.delayed(const Duration(seconds: 2));
+
+    // 4. Dialog를 띄우고, 사용자의 다음 행동(게임 리셋)을 기다립니다.
+    final bool? shouldReset = await _showCellContentDialog(index, foundNumbers);
+
+    // 5. '다시 시작' 버튼을 누르면 게임을 초기화합니다.
+    if (shouldReset == true) {
+      _resetGame(_gameModel.inputNumber);
+    }
+  }
+
   // 게임을 초기 상태로 설정하는 함수
   void _initializeGame(int number) {
     setState(() {
@@ -774,38 +804,23 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
                             }
                           },
                           onTapUp: (details) async {
-                            if (!isRevealed) {
-                              setState(() {
-                                _pressedCellIndex = null;
-                              });
+                            // 이미 열린 셀은 아무 동작도 하지 않도록 맨 위에서 막습니다.
+                            if (_gameModel.revealedCells[index]) return;
+
+                            setState(() {
+                              _pressedCellIndex = null;
+                            });
+
+                            // --- 실행 순서 로직을 명확하게 수정 ---
+                            if (_gameModel.numbers[index] == -1) {
+                              // 지뢰일 경우, 게임 오버 시퀀스를 시작합니다.
+                              // 이전에 클릭했던 셀도 여기서 함께 열립니다.
                               _revealCell(index);
-
-                              if (_gameModel.numbers[index] == -1) {
-                                final List<int> foundNumbers = [];
-                                for (
-                                  int i = 0;
-                                  i < _gameModel.totalCells;
-                                  i++
-                                ) {
-                                  if (_gameModel.revealedCells[i] &&
-                                      _gameModel.numbers[i] != -1) {
-                                    foundNumbers.add(_gameModel.numbers[i]);
-                                  }
-                                }
-                                foundNumbers.sort();
-
-                                final bool? shouldReset =
-                                    await _showCellContentDialog(
-                                      index,
-                                      foundNumbers,
-                                    );
-
-                                if (shouldReset == true) {
-                                  _resetGame(_gameModel.inputNumber);
-                                }
-                              } else {
-                                await _showCellContentDialog(index, []);
-                              }
+                              _handleGameOver(index);
+                            } else {
+                              // 일반 숫자일 경우, 셀을 즉시 열고 숫자 팝업을 띄웁니다.
+                              _revealCell(index);
+                              await _showCellContentDialog(index, []);
                             }
                           },
                           onTapCancel: () {
