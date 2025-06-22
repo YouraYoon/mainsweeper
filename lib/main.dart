@@ -161,7 +161,7 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
     });
 
     // 3. 사용자가 전체 판을 볼 수 있도록 잠시 기다립니다 (예: 2초).
-    await Future.delayed(const Duration(seconds: 2));
+    await Future.delayed(const Duration(seconds: 1));
 
     // 4. Dialog를 띄우고, 사용자의 다음 행동(게임 리셋)을 기다립니다.
     final bool? shouldReset = await _showCellContentDialog(index, foundNumbers);
@@ -496,7 +496,20 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
                 Navigator.of(context).pop();
               },
               child: const Text(
-                '확인',
+                '돌아가기',
+                style: TextStyle(color: Colors.black, fontSize: 20.0),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                if (Platform.isWindows ||
+                    Platform.isMacOS ||
+                    Platform.isLinux) {
+                  exit(0);
+                }
+              },
+              child: const Text(
+                '앱 종료',
                 style: TextStyle(color: Colors.black, fontSize: 20.0),
               ),
             ),
