@@ -88,6 +88,8 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
   final String _faceWinPath = 'assets/images/face_win.png';
   final String _faceLostPath = 'assets/images/face_lost.png';
   final String _facePlayPath = 'assets/images/face_play.png';
+  late String _currentFacePath;
+  bool _gaveOver = false;
 
   int? _pressedCellIndex;
   bool _isFacePressed = false;
@@ -149,6 +151,7 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
     // 1. 게임 종료 시퀀스를 시작합니다.
     setState(() {
       // 모델의 모든 셀을 '열림' 상태로 바꿉니다.
+      _currentFacePath = _faceLostPath;
       _gameModel.revealAllCells();
 
       // 2. 모든 숫자 셀에 색상을 부여하여 보이게 만듭니다. (핵심 수정사항)
@@ -180,7 +183,7 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
         inputNumber: number,
         difficulty: _selectedDifficulty,
       );
-
+      _currentFacePath = _facePlayPath;
       _cellColors = List.generate(_gameModel.totalCells, (_) => null);
       _colorPalette.shuffle(Random());
       _pressedCellIndex = null;
@@ -485,6 +488,7 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text("Developed by BilguuneeSoft"),
+                Text("bilguuneeSoft@gmail.com"),
                 Text("Random Minesweeper ver $_appVersion"),
               ],
             ),
@@ -711,7 +715,7 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
                                           ),
                                 ),
                                 child: Image.asset(
-                                  _facePlayPath,
+                                  _currentFacePath,
                                   width: 36,
                                   height: 36,
                                 ),
