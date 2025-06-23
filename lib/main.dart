@@ -168,7 +168,7 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
     });
 
     // 3. 사용자가 전체 판을 볼 수 있도록 잠시 기다립니다 (예: 2초).
-    await Future.delayed(const Duration(seconds: 2));
+    // await Future.delayed(const Duration(seconds: 1));
 
     // 4. Dialog를 띄우고, 사용자의 다음 행동(게임 리셋)을 기다립니다.
     final bool? shouldReset = await _showCellContentDialog(index, foundNumbers);
@@ -799,21 +799,21 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
                         } else if (isRevealed) {
                           // 2. 셀이 열렸을 때의 테두리
                           //    사용자가 직접 연 숫자 셀인지 확인합니다.
-                          if (_isGameOver &&
-                              _userRevealedIndices.contains(index) &&
-                              number != -1) {
-                            // 맞다면 테두리를 굵은 빨간색으로 설정하여 강조합니다.
-                            boxBorder = Border.all(
-                              color: const Color.fromARGB(255, 150, 25, 16),
-                              width: 2.0,
-                            );
-                          } else {
-                            // 지뢰 또는 강제로 열린 셀은 얇은 회색 테두리로 표시합니다.
-                            boxBorder = Border.all(
-                              color: Color(0xFFb7b7b7),
-                              width: 4.0,
-                            );
-                          }
+                          // if (_isGameOver &&
+                          //     _userRevealedIndices.contains(index) &&
+                          //     number != -1) {
+                          // 맞다면 테두리를 굵은 빨간색으로 설정하여 강조합니다.
+                          // boxBorder = Border.all(
+                          //   color: const Color.fromARGB(255, 150, 25, 16),
+                          //   width: 2.0,
+                          // );
+                          // } else {
+                          // 지뢰 또는 강제로 열린 셀은 얇은 회색 테두리로 표시합니다.
+                          boxBorder = Border.all(
+                            color: Color(0xFFb7b7b7),
+                            width: 4.0,
+                          );
+                          // }
                         } else {
                           // 3. 평상시 닫힌 셀의 테두리 (솟아오른 모양)
                           boxBorder = Border(

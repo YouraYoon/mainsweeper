@@ -50,44 +50,44 @@ class _ExplosionDialogContentState extends State<ExplosionDialogContent> {
         const SizedBox(height: 16),
 
         // 2. 숫자 목록 표시 부분
-        if (widget.revealedNumbers.isNotEmpty) ...[
-          Text(
-            '$foundCount개 당첨',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: 300, // 목록 영역의 너비
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 300.0),
-              child: Container(
-                padding: const EdgeInsets.all(8.0),
-                // decoration: BoxDecoration(
-                //   border: Border.all(color: Colors.grey.shade700),
-                //   borderRadius: BorderRadius.circular(4.0),
-                // ),
-                child: SingleChildScrollView(
-                  child: Center(
-                    child: Wrap(
-                      spacing: 6.0,
-                      runSpacing: 4.0,
-                      // 생성자를 통해 전달받은 widget.revealedNumbers를 사용
-                      children:
-                          widget.revealedNumbers
-                              .map(
-                                (num) => Chip(
-                                  label: Text('$num'),
-                                  backgroundColor: Colors.white70,
-                                ),
-                              )
-                              .toList(),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
+        // if (widget.revealedNumbers.isNotEmpty) ...[
+        //   Text(
+        //     '$foundCount개 당첨',
+        //     style: TextStyle(fontWeight: FontWeight.bold),
+        //   ),
+        //   const SizedBox(height: 8),
+        //   SizedBox(
+        //     width: 300, // 목록 영역의 너비
+        //     child: ConstrainedBox(
+        //       constraints: const BoxConstraints(maxHeight: 300.0),
+        //       child: Container(
+        //         padding: const EdgeInsets.all(8.0),
+        //         // decoration: BoxDecoration(
+        //         //   border: Border.all(color: Colors.grey.shade700),
+        //         //   borderRadius: BorderRadius.circular(4.0),
+        //         // ),
+        //         child: SingleChildScrollView(
+        //           child: Center(
+        //             child: Wrap(
+        //               spacing: 6.0,
+        //               runSpacing: 4.0,
+        //               // 생성자를 통해 전달받은 widget.revealedNumbers를 사용
+        //               children:
+        //                   widget.revealedNumbers
+        //                       .map(
+        //                         (num) => Chip(
+        //                           label: Text('$num'),
+        //                           backgroundColor: Colors.white70,
+        //                         ),
+        //                       )
+        //                       .toList(),
+        //             ),
+        //           ),
+        //         ),
+        //       ),
+        //     ),
+        //   ),
+        // ],
       ],
     );
   }
