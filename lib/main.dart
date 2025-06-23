@@ -231,6 +231,8 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
         if (number == null) {
           // '취소'를 눌렀으므로 난이도 선택으로 돌아감
           break; // 안쪽 루프를 탈출하여 바깥 루프 시작점으로
+        } else {
+          _resetGame(number);
         }
 
         // 3단계: 설정 확인
@@ -240,7 +242,6 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
         );
         if (confirmed == true) {
           // '확인'을 눌렀으므로 게임을 시작하고 전체 시퀀스 종료
-          _resetGame(number);
           return;
         }
         // '취소'를 누르면 현재 루프가 계속되어 숫자 입력창이 다시 뜸
@@ -368,9 +369,15 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('지뢰 비율: ${_difficultyLabels[difficulty]}'),
+              Text('추첨 숫자: $number'),
               const SizedBox(height: 8),
-              Text('입력 숫자: $number'),
+              Text(
+                '지뢰 비율: ${_gameModel.totalCells - number}(${(((_gameModel.totalCells - number) / _gameModel.totalCells) * 100).round()}%)',
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '테이블 크기: ${_gameModel.gridWidth} x ${_gameModel.gridHeight} = ${_gameModel.totalCells}',
+              ),
               const SizedBox(height: 8),
             ],
           ),

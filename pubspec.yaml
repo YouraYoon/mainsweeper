@@ -91,18 +91,14 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
   # --- 이 부분을 추가하거나 수정하세요 ---
-flutter_icons:
+flutter_launcher_icons:
   # 안드로이드, iOS 아이콘을 생성할지 여부
   android: true
   ios: true
+  image_path: "assets/icon/mine_icon.ico"
   # 윈도우, 맥OS 아이콘을 생성할지 여부
   windows:
     generate: true
-    image_path: "assets/icon/mine_icon.ico"
     icon_size: 48 # .ico 파일에 포함될 아이콘 크기
   macos:
     generate: true
-
-  # 1단계에서 준비한 아이콘 이미지 경로를 정확하게 입력합니다.
-    image_path: "assets/icon/mine_icon.ico"
-    icon_size: 48
