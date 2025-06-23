@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' as System;
 import 'package:flutter/services.dart';
 import 'package:minesweeper_rendom/explosion_dialog_content.dart';
 import 'package:minesweeper_rendom/game_model.dart';
@@ -101,7 +102,9 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
   late List<Color> _colorPalette; // 255개의 고대비 색상 팔레트
   late List<Color?> _cellColors; // 각 셀에 지정된 색상 (null일 수 있음)
 
+  final Set<int> _userRevealedIndices = {};
   bool _isGameInitialized = false;
+  bool _isGameOver = false;
 
   @override
   void initState() {
@@ -151,6 +154,7 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
     // 1. 게임 종료 시퀀스를 시작합니다.
     setState(() {
       // 모델의 모든 셀을 '열림' 상태로 바꿉니다.
+      _isGameOver = true;
       _currentFacePath = _faceLostPath;
       _gameModel.revealAllCells();
 
@@ -164,7 +168,7 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
     });
 
     // 3. 사용자가 전체 판을 볼 수 있도록 잠시 기다립니다 (예: 2초).
-    await Future.delayed(const Duration(seconds: 1));
+    await Future.delayed(const Duration(seconds: 2));
 
     // 4. Dialog를 띄우고, 사용자의 다음 행동(게임 리셋)을 기다립니다.
     final bool? shouldReset = await _showCellContentDialog(index, foundNumbers);
@@ -177,6 +181,8 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
 
   // 게임을 초기 상태로 설정하는 함수
   void _initializeGame(int number) {
+    _isGameOver = false;
+    _userRevealedIndices.clear();
     setState(() {
       _isGameInitialized = true;
       _gameModel = GameModel(
@@ -197,6 +203,9 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
 
   // --- 셀 열기/게임 재시작 로직 수정 ---
   void _revealCell(int index) {
+    if (!_gameModel.revealedCells[index]) {
+      _userRevealedIndices.add(index);
+    }
     setState(() {
       _gameModel.revealCell(index);
 
@@ -429,9 +438,9 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
     }
     return showGeneralDialog<bool>(
       context: context,
-      barrierDismissible: number == -1 ? false : true,
+      barrierDismissible: true, //number == -1 ? false : true,
       barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-      transitionDuration: const Duration(milliseconds: 300),
+      transitionDuration: const Duration(milliseconds: 100),
       pageBuilder: (
         BuildContext buildContext,
         Animation<double> animation,
@@ -517,6 +526,8 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
                     Platform.isMacOS ||
                     Platform.isLinux) {
                   exit(0);
+                } else if (Platform.isAndroid) {
+                  SystemNavigator.pop();
                 }
               },
               child: const Text(
@@ -577,12 +588,6 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
     final totalBombs = _gameModel.totalCells - _gameModel.inputNumber;
     final remainingBombs = totalBombs - _gameModel.bombsFoundCount;
     final remainingBombString = remainingBombs.toString().padLeft(3, '0');
-    // final int bombsProbability =
-    //     ((totalBombs / _gameModel.totalCells) * 100).round();
-    // final String bombsProbabilityString = bombsProbability.toString().padLeft(
-    //   2,
-    //   '0',
-    // );
 
     return Scaffold(
       backgroundColor: Color(0xFFB6B6B6),
@@ -778,6 +783,7 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
                         final Border boxBorder;
 
                         if (isPressed && !isRevealed) {
+                          // 1. 눌렸을 때의 테두리 (안으로 들어간 모양)
                           boxBorder = const Border(
                             top: BorderSide(
                               color: Color(0xFF6f6f6f),
@@ -791,11 +797,25 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
                             right: BorderSide(color: Colors.white, width: 4.0),
                           );
                         } else if (isRevealed) {
-                          boxBorder = Border.all(
-                            color: Color(0xFFb7b7b7),
-                            width: 4.0,
-                          );
+                          // 2. 셀이 열렸을 때의 테두리
+                          //    사용자가 직접 연 숫자 셀인지 확인합니다.
+                          if (_isGameOver &&
+                              _userRevealedIndices.contains(index) &&
+                              number != -1) {
+                            // 맞다면 테두리를 굵은 빨간색으로 설정하여 강조합니다.
+                            boxBorder = Border.all(
+                              color: const Color.fromARGB(255, 150, 25, 16),
+                              width: 2.0,
+                            );
+                          } else {
+                            // 지뢰 또는 강제로 열린 셀은 얇은 회색 테두리로 표시합니다.
+                            boxBorder = Border.all(
+                              color: Color(0xFFb7b7b7),
+                              width: 4.0,
+                            );
+                          }
                         } else {
+                          // 3. 평상시 닫힌 셀의 테두리 (솟아오른 모양)
                           boxBorder = Border(
                             bottom: BorderSide(
                               color: Color(0xFF6f6f6f),
@@ -815,6 +835,10 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
                             ),
                           );
                         }
+                        final Color cellBackgroundColor =
+                            isRevealed
+                                ? const Color(0xFFb7b7b7)
+                                : const Color(0xFFb8b8b8);
                         final String displayText =
                             isRevealed ? (number == -1 ? 'B' : '$number') : '';
 
@@ -857,10 +881,7 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
                           child: Container(
                             // 셀의 디자인을 정의합니다.
                             decoration: BoxDecoration(
-                              color:
-                                  isRevealed
-                                      ? Color(0xFFb7b7b7)
-                                      : Color(0xFFb8b8b8),
+                              color: cellBackgroundColor,
                               border: boxBorder,
                             ),
                             // 셀의 내용을 중앙에 배치합니다.
