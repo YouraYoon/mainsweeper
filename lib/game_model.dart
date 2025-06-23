@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math';
 
 import 'package:minesweeper_rendom/main.dart';
@@ -292,11 +293,29 @@ class GameModel {
     }
 
     if (gridHeight <= 12) {
-      fontSize = 24.0;
+      if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+        fontSize = 24.0;
+      } else if (Platform.isAndroid || Platform.isIOS) {
+        fontSize = 22.0;
+      } else {
+        fontSize = 20;
+      }
     } else if (gridHeight <= 15) {
-      fontSize = 20.0;
+      if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+        fontSize = 20.0;
+      } else if (Platform.isAndroid || Platform.isIOS) {
+        fontSize = 16.0;
+      } else {
+        fontSize = 14;
+      }
     } else {
-      fontSize = 16.0;
+      if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+        fontSize = 16.0;
+      } else if (Platform.isAndroid || Platform.isIOS) {
+        fontSize = 10.0;
+      } else {
+        fontSize = 10;
+      }
     }
 
     totalCells = gridWidth * gridHeight;

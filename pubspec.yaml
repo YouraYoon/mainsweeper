@@ -93,9 +93,9 @@ flutter:
   # --- 이 부분을 추가하거나 수정하세요 ---
 flutter_launcher_icons:
   # 안드로이드, iOS 아이콘을 생성할지 여부
-  android: true
   ios: true
   image_path: "assets/icon/mine_icon.ico"
+  min_sdk_android: 21
   # 윈도우, 맥OS 아이콘을 생성할지 여부
   windows:
     generate: true

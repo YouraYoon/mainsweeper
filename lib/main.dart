@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:minesweeper_rendom/explosion_dialog_content.dart';
@@ -13,37 +14,36 @@ enum Difficulty { easy, medium, hard }
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
-    await windowManager.ensureInitialized();
+  if (!kIsWeb) {
+    if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+      await windowManager.ensureInitialized();
 
-    await windowManager.setTitle("쿨타임 피크닉 2025");
+      await windowManager.setTitle("쿨타임 피크닉 2025");
 
-    //const Size initialSize = Size(1600, 900);
+      //const Size initialSize = Size(1600, 900);
 
-    WindowOptions windowOptions = const WindowOptions(
-      //size: initialSize,
-      center: true,
-      backgroundColor: Colors.transparent,
-      skipTaskbar: false,
-      titleBarStyle: TitleBarStyle.normal,
-    );
+      WindowOptions windowOptions = const WindowOptions(
+        //size: initialSize,
+        center: true,
+        backgroundColor: Colors.transparent,
+        skipTaskbar: false,
+        titleBarStyle: TitleBarStyle.normal,
+      );
 
-    windowManager.waitUntilReadyToShow(windowOptions, () async {
-      await windowManager.show();
-      await windowManager.focus();
+      windowManager.waitUntilReadyToShow(windowOptions, () async {
+        await windowManager.show();
+        await windowManager.focus();
 
-      //await windowManager.setResizable(true);
+        await windowManager.setFullScreen(true);
+      });
+    } else if (Platform.isAndroid || Platform.isIOS) {
+      await SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
 
-      // await windowManager.setAspectRatio(
-      //   initialSize.width / initialSize.height,
-      // );
-
-      //await windowManager.setMinimumSize(const Size(540, 960));
-
-      //창 최대화
-
-      await windowManager.setFullScreen(true);
-    });
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    }
   }
   runApp(const MyApp());
 }
@@ -85,11 +85,11 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
 
   String _appVersion = '';
   //이미지
-  final String _faceWinPath = 'assets/images/face_win.png';
+  // final String _faceWinPath = 'assets/images/face_win.png';
   final String _faceLostPath = 'assets/images/face_lost.png';
   final String _facePlayPath = 'assets/images/face_play.png';
   late String _currentFacePath;
-  bool _gaveOver = false;
+  // bool _gaveOver = false;
 
   int? _pressedCellIndex;
   bool _isFacePressed = false;
@@ -577,12 +577,12 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
     final totalBombs = _gameModel.totalCells - _gameModel.inputNumber;
     final remainingBombs = totalBombs - _gameModel.bombsFoundCount;
     final remainingBombString = remainingBombs.toString().padLeft(3, '0');
-    final int bombsProbability =
-        ((totalBombs / _gameModel.totalCells) * 100).round();
-    final String bombsProbabilityString = bombsProbability.toString().padLeft(
-      2,
-      '0',
-    );
+    // final int bombsProbability =
+    //     ((totalBombs / _gameModel.totalCells) * 100).round();
+    // final String bombsProbabilityString = bombsProbability.toString().padLeft(
+    //   2,
+    //   '0',
+    // );
 
     return Scaffold(
       backgroundColor: Color(0xFFB6B6B6),
