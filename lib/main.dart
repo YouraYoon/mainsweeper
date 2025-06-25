@@ -10,7 +10,7 @@ import 'package:minesweeper_rendom/game_model.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:window_manager/window_manager.dart';
 
-enum Difficulty { easy, medium, hard }
+enum Difficulty { noMine, easy, medium, hard }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -77,6 +77,7 @@ class RandomMineSweeper extends StatefulWidget {
 class _RandomMineSweeper extends State<RandomMineSweeper> {
   Difficulty _selectedDifficulty = Difficulty.easy;
   final Map<Difficulty, String> _difficultyLabels = {
+    Difficulty.noMine: '지뢰 빼고',
     Difficulty.easy: '5~15%',
     Difficulty.medium: '15~25%',
     Difficulty.hard: '30~35%',
@@ -229,17 +230,22 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
       if (difficulty == null) {
         // 사용자가 Dialog를 닫는 등 예외적인 경우,
         // 게임이 시작되지 않았다면 기본값으로 시작하고 루프 종료
-        if (!_isGameInitialized) _resetGame(_gameModel.inputNumber);
+        if (!_isGameInitialized) _resetGame(300);
         break;
       }
       _selectedDifficulty = difficulty; // 선택된 난이도 저장
 
       // 2단계: 숫자 입력
       while (mounted) {
-        final int? number = await _showNumberInputDialog();
+        int? number;
+        if (difficulty == Difficulty.noMine) {
+          number = await _showNoMineNumberDialog();
+        } else {
+          number = await _showNumberInputDialog();
+        }
+
         if (number == null) {
-          // '취소'를 눌렀으므로 난이도 선택으로 돌아감
-          break; // 안쪽 루프를 탈출하여 바깥 루프 시작점으로
+          break; // 난이도 선택으로 돌아가기
         } else {
           _resetGame(number);
         }
@@ -250,10 +256,9 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
           number,
         );
         if (confirmed == true) {
-          // '확인'을 눌렀으므로 게임을 시작하고 전체 시퀀스 종료
-          return;
+          // _resetGame(number);
+          return; //게임 시작 및 시쿼스 종료
         }
-        // '취소'를 누르면 현재 루프가 계속되어 숫자 입력창이 다시 뜸
       }
     }
   }
@@ -380,9 +385,10 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
             children: [
               Text('추첨 숫자: $number'),
               const SizedBox(height: 8),
-              Text(
-                '지뢰 비율: ${_gameModel.totalCells - number}(${(((_gameModel.totalCells - number) / _gameModel.totalCells) * 100).round()}%)',
-              ),
+              if (difficulty != Difficulty.noMine)
+                Text(
+                  '지뢰 비율: ${_gameModel.totalCells - number}(${(((_gameModel.totalCells - number) / _gameModel.totalCells) * 100).round()}%)',
+                ),
               const SizedBox(height: 8),
               Text(
                 '테이블 크기: ${_gameModel.gridWidth} x ${_gameModel.gridHeight} = ${_gameModel.totalCells}',
@@ -491,6 +497,52 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
     );
   }
 
+  Future<int?> _showNoMineNumberDialog() {
+    final List<int> options = [250, 300, 350, 400, 450];
+    int? selectedNumber = options[0];
+
+    return showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFFB5B5B5),
+              title: const Text('전체 숫자 개수 선택'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children:
+                    options.map((number) {
+                      return RadioListTile<int>(
+                        title: Text('$number 개'),
+                        value: number,
+                        groupValue: selectedNumber,
+                        onChanged: (int? value) {
+                          setState(() {
+                            selectedNumber = value;
+                          });
+                        },
+                      );
+                    }).toList(),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(null),
+                  child: Text('취소', style: TextStyle(color: Colors.black)),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(selectedNumber),
+                  child: Text('확인', style: TextStyle(color: Colors.black)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _showDeveloperInfo() {
     return showDialog<void>(
       context: context,
@@ -574,10 +626,16 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
         body: Center(child: CircularProgressIndicator(color: Colors.white)),
       );
     }
+
+    final int totalValuableCells =
+        _gameModel.difficulty == Difficulty.noMine
+            ? _gameModel.totalCells
+            : _gameModel.inputNumber;
+
     // 왼쪽 표시창: 남은 숫자 셀 개수
     // (전체 숫자 개수 - 찾은 숫자 개수)
     final remainingValuableCells =
-        _gameModel.inputNumber - _gameModel.revealedCount;
+        totalValuableCells - _gameModel.revealedCount;
     final remainingCellsString = remainingValuableCells.toString().padLeft(
       3,
       '0',
@@ -585,7 +643,10 @@ class _RandomMineSweeper extends State<RandomMineSweeper> {
 
     // 오른쪽 표시창: 남은 폭탄 개수
     // (전체 폭탄 개수 - 찾은 폭탄 개수)
-    final totalBombs = _gameModel.totalCells - _gameModel.inputNumber;
+    final totalBombs =
+        _gameModel.difficulty == Difficulty.noMine
+            ? 0
+            : _gameModel.totalCells - _gameModel.inputNumber;
     final remainingBombs = totalBombs - _gameModel.bombsFoundCount;
     final remainingBombString = remainingBombs.toString().padLeft(3, '0');
 
